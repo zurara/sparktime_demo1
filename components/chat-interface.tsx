@@ -11,7 +11,7 @@ import { Paperclip, Globe, Mic, Send } from 'lucide-react'
 type Message = {
   id: number
   content: string
-  role: 'user' | 'ai'
+  role: 'user' | 'ai' | 'reviewer'
 }
 
 // 添加类型定义
@@ -21,6 +21,13 @@ type StreamChunk = {
       content?: string
     }
   }[]
+}
+
+// 添加新的类型定义
+type SearchResult = {
+  title: string;
+  snippet: string;
+  link: string;
 }
 
 // 添加配置常量
@@ -52,6 +59,7 @@ const ChatInterface = () => {
   const [inputValue, setInputValue] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const abortControllerRef = useRef<AbortController | null>(null)
+  const [isWebEnabled, setIsWebEnabled] = useState(false)
   
   // 取消未完成的请求
   useEffect(() => {
@@ -62,12 +70,33 @@ const ChatInterface = () => {
     }
   }, [])
 
+  // 添加 Google 搜索函数
+  const searchGoogle = async (query: string): Promise<SearchResult[]> => {
+    try {
+      const response = await fetch('/api/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query })
+      });
+
+      if (!response.ok) {
+        throw new Error('搜索请求失败');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Google搜索失败:', error);
+      throw error;
+    }
+  }
+
   // 修改发送消息处理函数
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!inputValue.trim() || isLoading) return
 
-    // 添加用户消息
     const userMessage: Message = {
       id: Date.now(),
       content: inputValue,
@@ -77,10 +106,31 @@ const ChatInterface = () => {
     setInputValue("")
     setIsLoading(true)
 
-    // 创建新的 AbortController
     abortControllerRef.current = new AbortController()
 
     try {
+      let prompt = inputValue;
+      let aiMessageId: number;
+      
+      // 如果启用了网络搜索，先获取搜索结果
+      if (isWebEnabled) {
+        try {
+          const searchResults = await searchGoogle(inputValue);
+          const searchContext = searchResults
+            .map(result => `标题: ${result.title}\n摘要: ${result.snippet}\n链接: ${result.link}`)
+            .join('\n\n');
+          
+          prompt = `以下是关于"${inputValue}"的网络搜索结果：\n\n${searchContext}\n\n请基于以上搜索结果，对问题"${inputValue}"进行全面的回答。`;
+        } catch (error) {
+          console.error('搜索失败:', error);
+          setMessages(prev => [...prev, {
+            id: Date.now(),
+            content: '抱歉，网络搜索时出现错误。将直接使用AI回答。',
+            role: 'ai'
+          }]);
+        }
+      }
+
       const response = await fetch(API_CONFIG.baseUrl, {
         method: 'POST',
         headers: {
@@ -92,7 +142,7 @@ const ChatInterface = () => {
           messages: [
             {
               role: 'user',
-              content: inputValue
+              content: prompt
             }
           ],
           stream: true
@@ -110,11 +160,13 @@ const ChatInterface = () => {
         content: '',
         role: 'ai'
       }
+      aiMessageId = aiMessage.id
       setMessages(prev => [...prev, aiMessage])
 
       // 处理流式响应
       const reader = response.body?.getReader()
       const decoder = new TextDecoder()
+      let fullAiResponse = ''
 
       while (reader) {
         const { done, value } = await reader.read()
@@ -128,6 +180,7 @@ const ChatInterface = () => {
             try {
               const data: StreamChunk = JSON.parse(line.slice(6))
               const content = data.choices[0]?.delta?.content || ''
+              fullAiResponse += content
               
               setMessages(prev => prev.map(msg => 
                 msg.id === aiMessage.id 
@@ -140,8 +193,75 @@ const ChatInterface = () => {
           }
         }
       }
-    } catch (error) {
-      if (error.name === 'AbortError') {
+
+      // AI 回答完成后，添加评论员的点评
+      const reviewerPrompt = `作为一位专业的评论员，请对以下AI助手的回答进行简短的点评。评价其回答的准确性、完整性和实用性。
+
+用户问题：${inputValue}
+
+AI助手的回答：${fullAiResponse}
+
+请用简短的2-3句话进行点评。`;
+
+      const reviewerResponse = await fetch(API_CONFIG.baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${API_CONFIG.apiKey}`
+        },
+        body: JSON.stringify({
+          model: API_CONFIG.model,
+          messages: [
+            {
+              role: 'user',
+              content: reviewerPrompt
+            }
+          ],
+          stream: true
+        })
+      });
+
+      if (!reviewerResponse.ok) {
+        throw new Error('评论员API请求失败')
+      }
+
+      // 创建评论员消息
+      const reviewerMessage: Message = {
+        id: Date.now() + 2,
+        content: '',
+        role: 'reviewer'
+      }
+      setMessages(prev => [...prev, reviewerMessage])
+
+      // 处理评论员的流式响应
+      const reviewerReader = reviewerResponse.body?.getReader()
+      while (reviewerReader) {
+        const { done, value } = await reviewerReader.read()
+        if (done) break
+
+        const chunk = decoder.decode(value)
+        const lines = chunk.split('\n')
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+            try {
+              const data: StreamChunk = JSON.parse(line.slice(6))
+              const content = data.choices[0]?.delta?.content || ''
+              
+              setMessages(prev => prev.map(msg => 
+                msg.id === reviewerMessage.id 
+                  ? { ...msg, content: msg.content + content }
+                  : msg
+              ))
+            } catch (e) {
+              console.error('解析评论员响应数据失败:', e)
+            }
+          }
+        }
+      }
+
+    } catch (error: any) {
+      if (error?.name === 'AbortError') {
         console.log('请求被取消')
       } else {
         console.error('发送消息失败:', error)
@@ -164,24 +284,30 @@ const ChatInterface = () => {
         <div className="space-y-4">
           {messages.map((message) => (
             <div key={message.id} className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : ''}`}>
-              {message.role === 'ai' && (
+              {(message.role === 'ai' || message.role === 'reviewer') && (
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src="/placeholder.svg" alt="AI Avatar" />
-                  <AvatarFallback>AI</AvatarFallback>
+                  <AvatarImage 
+                    src={message.role === 'ai' ? "/ai-avatar.svg" : "/reviewer-avatar.svg"} 
+                    alt={`${message.role === 'ai' ? 'AI' : 'Reviewer'} Avatar`} 
+                  />
+                  <AvatarFallback>{message.role === 'ai' ? 'AI' : 'R'}</AvatarFallback>
                 </Avatar>
               )}
               <div className={`flex-1 ${message.role === 'user' ? 'max-w-[80%]' : ''}`}>
                 <div className={`rounded-lg p-4 ${
                   message.role === 'user' 
-                    ? 'bg-primary text-primary-foreground' 
+                    ? 'bg-primary text-primary-foreground'
+                    : message.role === 'reviewer'
+                    ? 'bg-secondary text-secondary-foreground'
                     : 'bg-muted'
                 }`}>
+                  {message.role === 'reviewer' && <div className="font-semibold mb-1">评论员点评：</div>}
                   {message.content}
                 </div>
               </div>
               {message.role === 'user' && (
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src="/placeholder.svg" alt="User Avatar" />
+                  <AvatarImage src="/user-avatar.svg" alt="User Avatar" />
                   <AvatarFallback>U</AvatarFallback>
                 </Avatar>
               )}
@@ -202,7 +328,13 @@ const ChatInterface = () => {
             className="flex-1"
             disabled={isLoading}
           />
-          <Button variant="outline" size="icon" type="button" disabled={isLoading}>
+          <Button 
+            variant={isWebEnabled ? "default" : "outline"} 
+            size="icon" 
+            type="button" 
+            disabled={isLoading}
+            onClick={() => setIsWebEnabled(!isWebEnabled)}
+          >
             <Globe className="h-4 w-4" />
           </Button>
           <Button variant="outline" size="icon" type="button" disabled={isLoading}>
