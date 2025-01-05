@@ -4,7 +4,7 @@ import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Plus, Dices } from 'lucide-react'
+import { Plus, Dices, Archive } from 'lucide-react'
 import { TaskCard, Task } from "./task-card"
 
 const API_CONFIG = {
@@ -18,6 +18,7 @@ const ChatInterface = () => {
   const [currentTask, setCurrentTask] = useState<Task | null>(null)
   const [inputValue, setInputValue] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [showArchived, setShowArchived] = useState(false)
   
   // 添加新任务
   const handleAddTask = async (e: React.FormEvent) => {
@@ -84,6 +85,9 @@ const ChatInterface = () => {
   
   const handleCompleteTask = () => {
     if (!currentTask) return
+    setTasks(prev => prev.map(task => 
+      task.id === currentTask.id ? { ...task, isCompleted: true, isArchived: true } : task
+    ))
     setCurrentTask(null)
   }
   
@@ -94,6 +98,10 @@ const ChatInterface = () => {
     ))
     setCurrentTask(null)
   }
+
+  // Add these computed values
+  const activeTasks = tasks.filter(task => !task.isArchived)
+  const archivedTasks = tasks.filter(task => task.isArchived)
 
   return (
     <Card className="w-full max-w-3xl mx-auto h-[600px] flex flex-col">
@@ -106,12 +114,47 @@ const ChatInterface = () => {
             onArchive={handleArchiveTask}
           />
         ) : (
-          <div className="h-full flex items-center justify-center">
-            <p className="text-muted-foreground">
-              {tasks.length === 0 
-                ? "请添加任务到签筒中" 
-                : "点击抽签按钮随机抽取任务"}
-            </p>
+          <div className="h-full flex flex-col">
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-muted-foreground">
+                  {tasks.length === 0 
+                    ? "请添加任务到签筒中" 
+                    : `签筒中还有 ${activeTasks.length} 个任务待完成`}
+                </p>
+                {archivedTasks.length > 0 && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setShowArchived(!showArchived)}
+                  >
+                    <Archive className="mr-2 h-4 w-4" />
+                    {showArchived ? "隐藏已归档" : "查看已归档"}
+                  </Button>
+                )}
+              </div>
+              
+              {showArchived && archivedTasks.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="font-medium text-sm text-muted-foreground">
+                    已归档任务 ({archivedTasks.length})
+                  </h3>
+                  <div className="space-y-3">
+                    {archivedTasks.map(task => (
+                      <TaskCard
+                        key={task.id}
+                        task={task}
+                        onReturn={() => {
+                          setTasks(prev => prev.map(t => 
+                            t.id === task.id ? { ...t, isArchived: false, isCompleted: false } : t
+                          ))
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </CardContent>
@@ -133,7 +176,7 @@ const ChatInterface = () => {
             size="icon" 
             variant="outline"
             onClick={handleDrawTask}
-            disabled={tasks.length === 0 || currentTask !== null}
+            disabled={activeTasks.length === 0 || currentTask !== null}
           >
             <Dices className="h-4 w-4" />
           </Button>
