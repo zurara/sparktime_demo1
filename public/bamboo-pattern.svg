@@ -1,0 +1,11 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 简单的竹纹理图案 -->
+  <path d="M0 0h200v200H0z" fill="#F3EEE4" fill-opacity="0.1"/>
+  <path d="M50 0v200" stroke="#8E7155" stroke-opacity="0.1" stroke-width="1"/>
+  <path d="M100 0v200" stroke="#8E7155" stroke-opacity="0.1" stroke-width="1"/>
+  <path d="M150 0v200" stroke="#8E7155" stroke-opacity="0.1" stroke-width="1"/>
+  <!-- 添加横向竹节 -->
+  <path d="M0 50h200" stroke="#8E7155" stroke-opacity="0.1" stroke-width="1"/>
+  <path d="M0 100h200" stroke="#8E7155" stroke-opacity="0.1" stroke-width="1"/>
+  <path d="M0 150h200" stroke="#8E7155" stroke-opacity="0.1" stroke-width="1"/>
+</svg> 

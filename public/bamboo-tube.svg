@@ -1,0 +1,19 @@
+<svg width="400" height="600" viewBox="0 0 400 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 竹筒主体 -->
+  <path d="M100,50 L300,50 L300,550 L100,550 Z" fill="#D2B48C" stroke="#8B4513" stroke-width="8"/>
+  
+  <!-- 竹节 -->
+  <line x1="95" y1="150" x2="305" y2="150" stroke="#8B4513" stroke-width="8"/>
+  <line x1="95" y1="250" x2="305" y2="250" stroke="#8B4513" stroke-width="8"/>
+  <line x1="95" y1="350" x2="305" y2="350" stroke="#8B4513" stroke-width="8"/>
+  <line x1="95" y1="450" x2="305" y2="450" stroke="#8B4513" stroke-width="8"/>
+  
+  <!-- 竹筒纹理 -->
+  <line x1="150" y1="50" x2="150" y2="550" stroke="#A0522D" stroke-width="2" stroke-opacity="0.3"/>
+  <line x1="200" y1="50" x2="200" y2="550" stroke="#A0522D" stroke-width="2" stroke-opacity="0.3"/>
+  <line x1="250" y1="50" x2="250" y2="550" stroke="#A0522D" stroke-width="2" stroke-opacity="0.3"/>
+  
+  <!-- 顶部和底部的圆弧 -->
+  <path d="M100,50 Q200,30 300,50" stroke="#8B4513" stroke-width="8" fill="none"/>
+  <path d="M100,550 Q200,570 300,550" stroke="#8B4513" stroke-width="8" fill="none"/>
+</svg> 

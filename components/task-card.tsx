@@ -48,48 +48,58 @@ export function TaskCard({ task, onReturn, onComplete, onRegenerate }: TaskCardP
 
   return (
     <Card className={cn(
-      "w-full max-w-md mx-auto",
+      "w-full max-w-md mx-auto bg-japanese-beige/50 border-japanese-brown/20",
       task.isCompleted && "opacity-75",
       task.isArchived && "opacity-60"
     )}>
       <CardContent className="pt-6 space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-lg">{task.title}</h3>
+          <h3 className="font-japanese font-medium text-japanese-navy text-lg">
+            {task.title}
+          </h3>
           {isCountingDown && (
-            <span className="text-2xl font-bold text-primary">
+            <span className="text-2xl font-bold text-japanese-red">
               {countdown}
             </span>
           )}
         </div>
-        <p className="text-muted-foreground">{task.description}</p>
-        <div className="space-y-2">
-          <h4 className="font-medium">实现步骤：</h4>
-          <ul className="list-decimal pl-4 space-y-1">
+        
+        <p className="text-japanese-brown/80">{task.description}</p>
+        
+        <div className="space-y-3">
+          <h4 className="font-japanese font-medium text-japanese-navy">实施步骤：</h4>
+          <ul className="list-none space-y-2">
             {task.steps.map((step, index) => (
-              <li key={index}>{step}</li>
+              <li key={index} className="flex items-start gap-3">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-japanese-green/10 flex items-center justify-center text-sm text-japanese-green">
+                  {index + 1}
+                </span>
+                <span className="text-japanese-brown">{step}</span>
+              </li>
             ))}
           </ul>
         </div>
-        {task.isCompleted && (
-          <div className="text-sm text-muted-foreground">
-            ✓ 已完成
-          </div>
-        )}
-        {task.isArchived && !task.isCompleted && (
-          <div className="text-sm text-muted-foreground">
-            已归档
-          </div>
-        )}
       </CardContent>
+      
       <CardFooter className="gap-2">
         {!isCountingDown && !task.isCompleted && !task.isArchived && (
           <>
-            <Button variant="outline" size="sm" onClick={handleStart}>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleStart}
+              className="border-japanese-green text-japanese-green hover:bg-japanese-green/10"
+            >
               <Play className="mr-2 h-4 w-4" />
               开始
             </Button>
             {onRegenerate && (
-              <Button variant="outline" size="sm" onClick={onRegenerate}>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={onRegenerate}
+                className="border-japanese-navy text-japanese-navy hover:bg-japanese-navy/10"
+              >
                 <RefreshCw className="mr-2 h-4 w-4" />
                 重新生成
               </Button>

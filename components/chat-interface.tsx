@@ -148,8 +148,8 @@ const ChatInterface = () => {
   }
 
   return (
-    <Card className="w-full max-w-3xl mx-auto h-[600px] flex flex-col">
-      <CardContent className="flex-1 overflow-auto p-4 space-y-4">
+    <Card className="w-full max-w-3xl mx-auto min-h-[500px] md:h-[600px] flex flex-col bg-opacity-95 backdrop-blur-sm border-japanese-brown/20 shadow-lg">
+      <CardContent className="flex-1 overflow-auto p-4 md:p-6 space-y-4">
         {currentTask ? (
           <TaskCard
             task={currentTask}
@@ -203,22 +203,27 @@ const ChatInterface = () => {
         )}
       </CardContent>
       
-      <CardFooter className="border-t p-4">
-        <form onSubmit={handleAddTask} className="flex w-full gap-2 items-center">
+      <CardFooter className="border-t border-japanese-brown/20 p-4 md:p-6">
+        <form onSubmit={handleAddTask} className="flex w-full gap-3 items-center">
           <Input 
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="输入要完成的任务"
-            className="flex-1"
-            disabled={isLoading}
+            className="flex-1 bg-transparent border-japanese-brown/30 focus-visible:ring-japanese-navy/30"
           />
-          <Button type="submit" size="icon" disabled={isLoading}>
+          <Button 
+            type="submit" 
+            size="icon" 
+            className="bg-japanese-navy hover:bg-japanese-navy/90"
+            disabled={isLoading}
+          >
             <Plus className="h-4 w-4" />
           </Button>
           <Button 
-            type="button" 
-            size="icon" 
+            type="button"
+            size="icon"
             variant="outline"
+            className="border-japanese-brown/30 hover:bg-japanese-beige"
             onClick={handleDrawTask}
             disabled={activeTasks.length === 0 || currentTask !== null}
           >
