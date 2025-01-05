@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { Check, RotateCcw, Archive, Play } from 'lucide-react'
+import { Check, RotateCcw, Play, RefreshCw } from 'lucide-react'
 import { cn } from "@/lib/utils"
 import confetti from 'canvas-confetti'
 
@@ -18,10 +18,10 @@ interface TaskCardProps {
   task: Task
   onReturn?: () => void
   onComplete?: () => void
-  onArchive?: () => void
+  onRegenerate?: () => void
 }
 
-export function TaskCard({ task, onReturn, onComplete, onArchive }: TaskCardProps) {
+export function TaskCard({ task, onReturn, onComplete, onRegenerate }: TaskCardProps) {
   const [isCountingDown, setIsCountingDown] = useState(false)
   const [countdown, setCountdown] = useState(10)
 
@@ -83,10 +83,18 @@ export function TaskCard({ task, onReturn, onComplete, onArchive }: TaskCardProp
       </CardContent>
       <CardFooter className="gap-2">
         {!isCountingDown && !task.isCompleted && !task.isArchived && (
-          <Button variant="outline" size="sm" onClick={handleStart}>
-            <Play className="mr-2 h-4 w-4" />
-            开始
-          </Button>
+          <>
+            <Button variant="outline" size="sm" onClick={handleStart}>
+              <Play className="mr-2 h-4 w-4" />
+              开始
+            </Button>
+            {onRegenerate && (
+              <Button variant="outline" size="sm" onClick={onRegenerate}>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                重新生成
+              </Button>
+            )}
+          </>
         )}
         {onReturn && (
           <Button variant="outline" size="sm" onClick={onReturn}>
@@ -98,12 +106,6 @@ export function TaskCard({ task, onReturn, onComplete, onArchive }: TaskCardProp
           <Button variant="outline" size="sm" onClick={onComplete}>
             <Check className="mr-2 h-4 w-4" />
             完成
-          </Button>
-        )}
-        {!task.isArchived && onArchive && (
-          <Button variant="outline" size="sm" onClick={onArchive}>
-            <Archive className="mr-2 h-4 w-4" />
-            归档
           </Button>
         )}
       </CardFooter>

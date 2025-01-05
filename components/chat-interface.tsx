@@ -90,18 +90,62 @@ const ChatInterface = () => {
     ))
     setCurrentTask(null)
   }
-  
-  const handleArchiveTask = () => {
-    if (!currentTask) return
-    setTasks(prev => prev.map(task => 
-      task.id === currentTask.id ? { ...task, isArchived: true } : task
-    ))
-    setCurrentTask(null)
-  }
 
   // Add these computed values
   const activeTasks = tasks.filter(task => !task.isArchived)
   const archivedTasks = tasks.filter(task => task.isArchived)
+
+  // Add regenerateTask function inside ChatInterface component
+  const regenerateTask = async () => {
+    if (!currentTask) return
+    
+    setIsLoading(true)
+    try {
+      const response = await fetch(API_CONFIG.baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${API_CONFIG.apiKey}`
+        },
+        body: JSON.stringify({
+          model: API_CONFIG.model,
+          messages: [
+            {
+              role: 'user',
+              content: `请将以下任务分解成具体的第一步，并提供完整的实施步骤指南。任务：${currentTask.title}
+              
+              请按以下格式返回：
+              {
+                "title": "第一步具体任务",
+                "description": "任务描述",
+                "steps": ["步骤1", "步骤2", "步骤3"]
+              }`
+            }
+          ]
+        })
+      })
+
+      const data = await response.json()
+      const taskData = JSON.parse(data.choices[0].message.content)
+      
+      // Update the current task with new data
+      const updatedTask = {
+        ...currentTask,
+        title: taskData.title,
+        description: taskData.description,
+        steps: taskData.steps
+      }
+      
+      setCurrentTask(updatedTask)
+      setTasks(prev => prev.map(task => 
+        task.id === currentTask.id ? updatedTask : task
+      ))
+    } catch (error) {
+      console.error('重新生成任务失败:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return (
     <Card className="w-full max-w-3xl mx-auto h-[600px] flex flex-col">
@@ -111,7 +155,7 @@ const ChatInterface = () => {
             task={currentTask}
             onReturn={handleReturnTask}
             onComplete={handleCompleteTask}
-            onArchive={handleArchiveTask}
+            onRegenerate={regenerateTask}
           />
         ) : (
           <div className="h-full flex flex-col">
